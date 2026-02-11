@@ -2,6 +2,8 @@
 #include <vector>
 #include <span>
 #include <functional>
+#include <memory>
+#include <variant>
 
 class Buffer 
 {
@@ -14,81 +16,90 @@ public:
 		static constexpr auto noOperation = [](uint8_t*) {};
 	};
 
-	Buffer() = default;
+	Buffer() noexcept
+		:buffer(std::in_place_type<StackVector>) {};
 
-	//std::size_t get_size() const
-	//{
-	//	return buffer.size();
-	//}
+	Buffer(std::vector<uint8_t>&& vector) noexcept
+		:buffer(std::in_place_type<StackVector>, std::move(vector)) {};
 
-	//std::span<const uint8_t> raw_bytes()
-	//{
-	//	return std::span<const uint8_t>(buffer.data(), buffer.size());
-	//}
-
-	template<typename T>
-	void write(const T& value)
+	Buffer(uint8_t* data, std::size_t size, std::function<void(uint8_t*)> deleter)
+		:buffer(std::in_place_type<ControllPtr>, data, size, std::move(deleter))
 	{
-
-			auto alignment = alignof(T);
-			align_offset(alignment);
-
-			std::size_t  needed_size = write_offset + sizeof(T);
-			if (needed_size > buffer.size())
-			{
-				resize(needed_size);
-			}
-
-			memcpy(buffer.data() + write_offset, &value, sizeof(T));
-			write_offset += sizeof(T);
-		
+		if (size > 0 && data == nullptr)
+		{
+			throw std::invalid_argument("Null pointer");
+		}
+		if (!std::get<ControllPtr>(buffer).ptr.get_deleter())
+		{
+			throw std::invalid_argument("Need a valid deleter");
+		}
 	}
 
-	template<typename T>
-	T read()
+	Buffer(char* data, std::size_t size, std::function<void(char*)> deleter)
+		:Buffer(reinterpret_cast<uint8_t*>(data), size, [char_deleter = std::move(deleter)](uint8_t* ptr_to_delete)
+			{
+				if (ptr_to_delete) 
+				{ 
+					char_deleter(reinterpret_cast<char*>(ptr_to_delete));
+				}
+			}) {};
+
+
+	Buffer(void* data, std::size_t size, std::function<void(void*)> deleter)
+		:Buffer(static_cast<uint8_t*>(data), size, [void_deleter = std::move(deleter)](uint8_t* ptr_to_delete)
+			{
+				if (ptr_to_delete)
+				{
+					void_deleter(reinterpret_cast<char*>(ptr_to_delete));
+				}
+			}) {
+	};
+
+	Buffer(const Buffer&) = delete;
+	Buffer& operator=(const Buffer&) = delete;
+
+	Buffer(Buffer&&) noexcept = default;
+	Buffer& operator=(Buffer&&) noexcept = default;
+
+	std::size_t get_size() const noexcept
 	{
-		
-			auto alignment = alignof(T);
-			read_offset = (read_offset + alignment - 1) & ~(alignment - 1);
 
-			if (read_offset + sizeof(T) > buffer.size())
-				throw std::out_of_range("Buffer underflow");
+	}
 
-			T value;
-
-			memcpy(&value, buffer.data() + read_offset, sizeof(T));
-
-			read_offset += sizeof(T);
-			return value;
-		
+	const uint8_t get_ptr() const noexcept
+	{
 
 	}
 	
+	std::span<const uint8_t> raw_bytes() const noexcept
+	{
+
+	}
+
+	bool is_empty() const noexcept
+	{
+
+	}
+
+	bool is_owned() const noexcept
+	{
+
+	}
 
 private:
 	using StackVector = std::vector<uint8_t>;
-	//std::size_t write_offset = 0;
-	//std::size_t read_offset = 0;
-
-	//void align_offset(std::size_t alignment)
-	//{
-	//	write_offset = (write_offset + alignment - 1) & ~(alignment - 1);
-	//}
-
-	//void resize(std::size_t new_size)
-	//{
-	//	buffer.resize(new_size);
-	//}
 
 	struct ControllPtr
 	{
 		std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> ptr;
 		std::size_t count = 0;
 
-		ControllPtr(uint8_t data, size_t size, std::function<void(uint8_t*)> deleter)
-		{
+		ControllPtr(uint8_t* data, size_t size, std::function<void(uint8_t*)> deleter)
+			:ptr(data, std::move(deleter)), count(size) { }
 
-		}
+		ControllPtr() = default;
 
 	};
+
+	std::variant<StackVector, ControllPtr> buffer;
 };
