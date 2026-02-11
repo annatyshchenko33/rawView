@@ -1,22 +1,30 @@
 #pragma once
 #include <vector>
 #include <span>
+#include <functional>
 
 class Buffer 
 {
 public:
 
+	struct deleters
+	{
+		static constexpr auto free = [](void* ptr) {std::free(ptr); };
+		static constexpr auto del_arr = [](uint8_t* ptr) {delete[] ptr; };
+		static constexpr auto noOperation = [](uint8_t*) {};
+	};
+
 	Buffer() = default;
 
-	std::size_t get_size() const
-	{
-		return buffer.size();
-	}
+	//std::size_t get_size() const
+	//{
+	//	return buffer.size();
+	//}
 
-	std::span<const uint8_t> raw_bytes()
-	{
-		return std::span<const uint8_t>(buffer.data(), buffer.size());
-	}
+	//std::span<const uint8_t> raw_bytes()
+	//{
+	//	return std::span<const uint8_t>(buffer.data(), buffer.size());
+	//}
 
 	template<typename T>
 	void write(const T& value)
@@ -58,18 +66,29 @@ public:
 	
 
 private:
-	std::vector<uint8_t> buffer;
-	std::size_t write_offset = 0;
-	std::size_t read_offset = 0;
+	using StackVector = std::vector<uint8_t>;
+	//std::size_t write_offset = 0;
+	//std::size_t read_offset = 0;
 
-	void align_offset(std::size_t alignment)
+	//void align_offset(std::size_t alignment)
+	//{
+	//	write_offset = (write_offset + alignment - 1) & ~(alignment - 1);
+	//}
+
+	//void resize(std::size_t new_size)
+	//{
+	//	buffer.resize(new_size);
+	//}
+
+	struct ControllPtr
 	{
-		write_offset = (write_offset + alignment - 1) & ~(alignment - 1);
-	}
+		std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> ptr;
+		std::size_t count = 0;
 
-	void resize(std::size_t new_size)
-	{
-		buffer.resize(new_size);
-	}
+		ControllPtr(uint8_t data, size_t size, std::function<void(uint8_t*)> deleter)
+		{
 
+		}
+
+	};
 };
