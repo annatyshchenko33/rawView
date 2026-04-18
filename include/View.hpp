@@ -35,6 +35,33 @@ public:
 		return std::string_view(reinterpret_cast<const char*> (m_data.data() + char_offset), str_len);
 	}
 
+	template <typename T>
+	const T& ReadTable(std::size_t table_offset, std::size_t field_index)
+	{
+		std::size_t field_offset = GetTableOffset(table_offset, field_index);
+		return Read<T>(field_offset);
+	}
+
+	std::string_view ReadTableString(std::size_t table_offset, std::size_t field_index)
+	{
+		std::size_t field_offset = GetTableOffset(table_offset, field_index);
+		return ReadString(field_offset);
+	}
+
 private:
 	std::span <const uint8_t> m_data;
+
+	std::size_t GetTableOffset(std::size_t table_offset, std::size_t field_index)
+	{
+		uint32_t field_count = Read<uint32_t>(table_offset);
+		if (field_index >= field_count)
+		{
+			throw std::out_of_range("field index out of range");
+		}
+
+		std::size_t table_offset_start = table_offset + sizeof(uint32_t);
+		std::size_t field_offset = Read<uint32_t>(table_offset_start + field_index * sizeof(uint32_t));
+
+		return field_offset;
+	}
 };
