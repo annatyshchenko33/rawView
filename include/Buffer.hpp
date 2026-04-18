@@ -4,32 +4,34 @@
 #include <functional>
 #include <memory>
 #include <variant>
+#include <stdexcept>
+#include <type_traits>
 
 class Buffer 
 {
 public:
 
-	struct deleters
+	struct Deleters
 	{
-		static constexpr auto free = [](void* ptr) {std::free(ptr); };
-		static constexpr auto del_arr = [](uint8_t* ptr) {delete[] ptr; };
-		static constexpr auto noOperation = [](uint8_t*) {};
+		static constexpr auto Free = [](void* ptr) {std::free(ptr); };
+		static constexpr auto DeleteArr = [](uint8_t* ptr) {delete[] ptr; };
+		static constexpr auto NoOperation = [](uint8_t*) {};
 	};
 
 	Buffer() noexcept
-		:buffer(std::in_place_type<StackVector>) {};
+		:m_buffer(std::in_place_type<StackVector>) {};
 
 	Buffer(std::vector<uint8_t>&& vector) noexcept
-		:buffer(std::in_place_type<StackVector>, std::move(vector)) {};
+		:m_buffer(std::in_place_type<StackVector>, std::move(vector)) {};
 
 	Buffer(uint8_t* data, std::size_t size, std::function<void(uint8_t*)> deleter)
-		:buffer(std::in_place_type<ControllPtr>, data, size, std::move(deleter))
+		:m_buffer(std::in_place_type<ControllPtr>, data, size, std::move(deleter))
 	{
 		if (size > 0 && data == nullptr)
 		{
 			throw std::invalid_argument("Null pointer");
 		}
-		if (!std::get<ControllPtr>(buffer).ptr.get_deleter())
+		if (!std::get<ControllPtr>(m_buffer).ptr)
 		{
 			throw std::invalid_argument("Need a valid deleter");
 		}
@@ -63,27 +65,49 @@ public:
 
 	std::size_t get_size() const noexcept
 	{
-
+		return std::visit([](auto&& value) -> std::size_t
+			{
+				using T = std::decay_t<decltype(value)>;
+				if constexpr (std::is_same_v<T, StackVector>)
+				{
+					return value.size();
+				}
+				else
+				{
+					return value.c_size;
+				}
+			}, m_buffer);
 	}
 
-	const uint8_t get_ptr() const noexcept
+	const uint8_t* get_ptr() const noexcept
 	{
-
+		return std::visit([](auto&& value) -> const uint8_t*
+			{
+				using T = std::decay_t<decltype(value)>;
+				if constexpr (std::is_same_v<T, StackVector>)
+				{
+					return value.data();
+				}
+				else
+				{
+					return value.ptr.get();
+				}
+			}, m_buffer);
 	}
 	
 	std::span<const uint8_t> raw_bytes() const noexcept
 	{
-
+		return std::span<const uint8_t>(get_ptr(), get_size());	
 	}
 
 	bool is_empty() const noexcept
 	{
-
+		return get_size() == 0;
 	}
 
 	bool is_owned() const noexcept
 	{
-
+		return std::holds_alternative<StackVector>(m_buffer);
 	}
 
 private:
@@ -92,14 +116,14 @@ private:
 	struct ControllPtr
 	{
 		std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> ptr;
-		std::size_t count = 0;
+		std::size_t c_size = 0;
 
 		ControllPtr(uint8_t* data, size_t size, std::function<void(uint8_t*)> deleter)
-			:ptr(data, std::move(deleter)), count(size) { }
+			:ptr(data, std::move(deleter)), c_size(size) { }
 
 		ControllPtr() = default;
 
 	};
 
-	std::variant<StackVector, ControllPtr> buffer;
+	std::variant<StackVector, ControllPtr> m_buffer;
 };

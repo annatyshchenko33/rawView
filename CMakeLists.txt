@@ -8,27 +8,18 @@ set(SOURCES
     src/main.cpp
 )
 
-set(HEADERS
-    include/rawview/buffer.hpp
-    include/rawview/map.hpp
-    include/rawview/rawview.hpp
-    include/rawview/translate.hpp
-)
-
 add_executable(${PROJECT_NAME}
     ${SOURCES}
-    ${HEADERS}
 )
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE include
 )
 
-
 find_package(GTest REQUIRED)
 enable_testing()
 
-file(GLOB TEST_SOURCES "utests/*.cpp")
+file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "utests/*.cpp")
 
 add_executable(UTests
     ${TEST_SOURCES}
@@ -37,7 +28,7 @@ add_executable(UTests
 target_include_directories(UTests PRIVATE include)
 
 target_link_libraries(UTests
-    PRIVATE GTest::gtest_main GTest::gtest
+    PRIVATE GTest::gtest_main
 )
 
 include(GoogleTest)
