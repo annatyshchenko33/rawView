@@ -9,32 +9,52 @@ public:
 	TableBuilder(Builder& builder) :m_builder(builder) {};
 
 	template <typename T>
-	TableBuilder& Add(T value)
+	TableBuilder& Add(std::string_view name, T value)
 	{
+		std::size_t name_offset = m_builder.AddString(name);
 		std::size_t offset = m_builder.Add(value);
-		m_offsets.push_back(offset);
+
+		FieldInfo field;
+		field.name_offset = name_offset;
+		field.value_offset = offset;
+
+		m_fields.push_back(field);
 		return *this;
 	}
 
-	TableBuilder& AddString(std::string_view str)
+	TableBuilder& AddString(std::string_view name, std::string_view str)
 	{
+		std::size_t name_offset = m_builder.AddString(name);
 		std::size_t offset = m_builder.AddString(str);
-		m_offsets.push_back(offset);
+
+		FieldInfo field;
+		field.name_offset = name_offset;
+		field.value_offset = offset;
+
+		m_fields.push_back(field);
 		return *this;
 	}
 
 	std::pair<Buffer, std::size_t> Finish()
 	{
-		std::size_t table_offset = m_builder.Add<uint32_t>(m_offsets.size());
+		uint32_t table_offset = m_builder.Add<uint32_t>(m_fields.size());
 
-		for (int i = 0; i < m_offsets.size(); ++i)
+		for (int i = 0; i < m_fields.size(); ++i)
 		{
-			m_builder.Add<uint32_t>(m_offsets[i]);
+			m_builder.Add<uint32_t>(m_fields[i].name_offset);
+			m_builder.Add<uint32_t>(m_fields[i].value_offset);
 		}
 		return { m_builder.Finish(), table_offset };
 	}
 
 private:
 	Builder& m_builder;
-	std::vector<std::size_t> m_offsets;
+
+	struct FieldInfo
+	{
+		std::size_t name_offset;
+		std::size_t value_offset;
+	};
+
+	std::vector<FieldInfo> m_fields;
 };

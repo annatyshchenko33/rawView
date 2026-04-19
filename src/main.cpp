@@ -10,15 +10,17 @@ int main()
 	Builder builder;
 	TableBuilder tb(builder);
 
-	tb.Add<int32_t>(21)
-		.Add<float>(98.5)
-		.AddString("Zero");
+	tb.Add<int32_t>("age", 21).AddString("name", "anya");
 
 	auto [buf, table_offset] = tb.Finish();
 
 	View viewer(buf);
 
+	//index search
 	std::cout << viewer.ReadTable<int32_t>(table_offset, 0) << std::endl;
-	std::cout << viewer.ReadTable<float>(table_offset, 1) << std::endl;
-	std::cout << viewer.ReadTableString(table_offset, 2) << std::endl;
+	std::cout << viewer.ReadTableString(table_offset, 1) << std::endl;
+
+	//name search
+	std::cout << viewer.ReadTable<int32_t>(table_offset, "age") << std::endl;
+	std::cout << viewer.ReadTableString(table_offset, "name") << std::endl;
 }
