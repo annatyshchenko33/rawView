@@ -33,6 +33,12 @@ public:
 		return Buffer(std::move(m_data));
 	}
 
+	template<typename T>
+	void WriteAt(std::size_t offset, T value)
+	{
+		memcpy(m_data.data() + offset, &value, sizeof(T));
+	}
+
 private:
 	std::vector <uint8_t> m_data;
 

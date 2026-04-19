@@ -9,7 +9,10 @@
 class View
 {
 public:
-	View(const Buffer& buffer) : m_data(buffer.raw_bytes()) {};
+	View(const Buffer& buffer) : m_data(buffer.raw_bytes()) 
+	{
+		m_root_offset = Read<uint32_t>(0);
+	};
 
 	template<typename T>
 	const T& Read(std::size_t offset)
@@ -37,34 +40,35 @@ public:
 
 	//index search
 	template <typename T>
-	const T& ReadTable(std::size_t table_offset, std::size_t field_index)
+	const T& ReadTable(std::size_t field_index)
 	{
-		std::size_t field_offset = GetFieldOffset(table_offset, field_index);
+		std::size_t field_offset = GetFieldOffset(m_root_offset, field_index);
 		return Read<T>(field_offset);
 	}
 
-	std::string_view ReadTableString(std::size_t table_offset, std::size_t field_index)
+	std::string_view ReadTableString(std::size_t field_index)
 	{
-		std::size_t field_offset = GetFieldOffset(table_offset, field_index);
+		std::size_t field_offset = GetFieldOffset(m_root_offset, field_index);
 		return ReadString(field_offset);
 	}
 
 	//field name search
 	template <typename T>
-	const T& ReadTable(std::size_t table_offset, std::string_view name)
+	const T& ReadTable(std::string_view name)
 	{
-		std::size_t field_offset = GetFieldOffset(table_offset, name);
+		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
 		return Read<T>(field_offset);
 	}
 
-	std::string_view ReadTableString(std::size_t table_offset, std::string_view name)
+	std::string_view ReadTableString(std::string_view name)
 	{
-		std::size_t field_offset = GetFieldOffset(table_offset, name);
+		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
 		return ReadString(field_offset);
 	}
 
 private:
 	std::span <const uint8_t> m_data;
+	std::size_t m_root_offset;
 
 	std::size_t GetFieldOffset(std::size_t table_offset, std::size_t field_index)
 	{

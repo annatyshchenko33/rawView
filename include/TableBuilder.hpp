@@ -6,7 +6,10 @@
 class TableBuilder
 {
 public:
-	TableBuilder(Builder& builder) :m_builder(builder) {};
+	TableBuilder(Builder& builder) :m_builder(builder) 
+	{
+		m_root_offset = m_builder.Add<uint32_t>(0);
+	};
 
 	template <typename T>
 	TableBuilder& Add(std::string_view name, T value)
@@ -35,16 +38,17 @@ public:
 		return *this;
 	}
 
-	std::pair<Buffer, std::size_t> Finish()
+	Buffer Finish()
 	{
-		uint32_t table_offset = m_builder.Add<uint32_t>(m_fields.size());
+		std::size_t table_offset = m_builder.Add<uint32_t>(m_fields.size());
+		m_builder.WriteAt<uint32_t>(m_root_offset, table_offset);
 
 		for (int i = 0; i < m_fields.size(); ++i)
 		{
 			m_builder.Add<uint32_t>(m_fields[i].name_offset);
 			m_builder.Add<uint32_t>(m_fields[i].value_offset);
 		}
-		return { m_builder.Finish(), table_offset };
+		return m_builder.Finish();
 	}
 
 private:
@@ -57,4 +61,5 @@ private:
 	};
 
 	std::vector<FieldInfo> m_fields;
+	std::size_t m_root_offset;
 };

@@ -12,15 +12,15 @@ int main()
 
 	tb.Add<int32_t>("age", 21).AddString("name", "anya");
 
-	auto [buf, table_offset] = tb.Finish();
+	Buffer buf = tb.Finish();
 
 	View viewer(buf);
 
 	//index search
-	std::cout << viewer.ReadTable<int32_t>(table_offset, 0) << std::endl;
-	std::cout << viewer.ReadTableString(table_offset, 1) << std::endl;
+	std::cout << viewer.ReadTable<int32_t>(0) << std::endl;
+	std::cout << viewer.ReadTableString(1) << std::endl;
 
 	//name search
-	std::cout << viewer.ReadTable<int32_t>(table_offset, "age") << std::endl;
-	std::cout << viewer.ReadTableString(table_offset, "name") << std::endl;
+	std::cout << viewer.ReadTable<int32_t>("age") << std::endl;
+	std::cout << viewer.ReadTableString("name") << std::endl;
 }
