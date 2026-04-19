@@ -6,6 +6,11 @@
 class TableBuilder
 {
 public:
+	TableBuilder()
+	{
+		m_root_offset = m_builder.Add<uint32_t>(0);
+	};
+
 	TableBuilder(Builder& builder) :m_builder(builder) 
 	{
 		m_root_offset = m_builder.Add<uint32_t>(0);
@@ -52,7 +57,7 @@ public:
 	}
 
 private:
-	Builder& m_builder;
+	Builder m_builder;
 
 	struct FieldInfo
 	{

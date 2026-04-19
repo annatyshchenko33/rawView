@@ -7,8 +7,11 @@
 
 int main()
 {
-	Builder builder;
-	TableBuilder tb(builder);
+	//option
+	//Builder builder;
+	//TableBuilder tb(builder);
+
+	TableBuilder tb;
 
 	tb.Add<int32_t>("age", 21).AddString("name", "anya");
 
