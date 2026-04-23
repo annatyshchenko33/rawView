@@ -11,7 +11,7 @@ public:
 		m_root_offset = m_builder.Add<uint32_t>(0);
 	};
 
-	TableBuilder(Builder& builder) :m_builder(builder) 
+	TableBuilder(Builder&& builder) :m_builder(std::move(builder)) 
 	{
 		m_root_offset = m_builder.Add<uint32_t>(0);
 	};
@@ -22,12 +22,7 @@ public:
 		std::size_t name_offset = m_builder.AddString(name);
 		std::size_t offset = m_builder.Add(value);
 
-		FieldInfo field;
-		field.name_offset = name_offset;
-		field.value_offset = offset;
-
-		m_fields.push_back(field);
-		return *this;
+		return FieldConstructor(name_offset, offset);
 	}
 
 	TableBuilder& AddString(std::string_view name, std::string_view str)
@@ -35,12 +30,23 @@ public:
 		std::size_t name_offset = m_builder.AddString(name);
 		std::size_t offset = m_builder.AddString(str);
 
-		FieldInfo field;
-		field.name_offset = name_offset;
-		field.value_offset = offset;
+		return FieldConstructor(name_offset, offset);
+	}
 
-		m_fields.push_back(field);
-		return *this;
+	template <typename T>
+	TableBuilder& AddArray(std::string_view name, std::span<const T> arr)
+	{
+		std::size_t name_offset = m_builder.AddString(name);
+		std::size_t offset = m_builder.AddArray<T>(arr);
+
+		return FieldConstructor(name_offset, offset);
+	}
+
+	//initializer_list
+	template <typename T>
+	TableBuilder& AddArray(std::string_view name, std::initializer_list<T> arr)
+	{
+		return AddArray<T>(name, std::span<const T>(arr.begin(), arr.size()));
 	}
 
 	Buffer Finish()
@@ -67,4 +73,14 @@ private:
 
 	std::vector<FieldInfo> m_fields;
 	std::size_t m_root_offset;
+
+	TableBuilder& FieldConstructor(std::size_t name_offset, std::size_t offset)
+	{
+		FieldInfo field;
+		field.name_offset = name_offset;
+		field.value_offset = offset;
+
+		m_fields.push_back(field);
+		return *this;
+	}
 };

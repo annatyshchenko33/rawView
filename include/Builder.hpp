@@ -28,6 +28,24 @@ public:
 		return offset;
 	}
 
+	template<typename T>
+	std::size_t AddArray(std::span<const T> arr)
+	{
+		std::size_t offset = Add<uint32_t>(arr.size());
+		for (auto& elem : arr)
+		{
+			Add<T>(elem);
+		}
+		return offset;
+	}
+	
+	//initializer_list
+	template<typename T>
+	std::size_t AddArray(std::initializer_list<T> arr)
+	{
+		return AddArray<T>(std::span<const T>(arr.begin(), arr.size()));
+	}
+
 	Buffer Finish()
 	{
 		return Buffer(std::move(m_data));

@@ -6,6 +6,8 @@
 
 #include "Buffer.hpp"
 
+class FieldProxy;
+
 class View
 {
 public:
@@ -13,6 +15,8 @@ public:
 	{
 		m_root_offset = Read<uint32_t>(0);
 	};
+
+	FieldProxy operator[](std::string_view name);
 
 	template<typename T>
 	const T& Read(std::size_t offset)
@@ -38,6 +42,20 @@ public:
 		return std::string_view(reinterpret_cast<const char*> (m_data.data() + char_offset), str_len);
 	}
 
+	template<typename T>
+	std::span<const T> ReadArray(std::size_t offset)
+	{
+		uint32_t arr_len = Read<uint32_t>(offset);
+		std::size_t arr_offset = offset + sizeof(uint32_t);
+
+		if (!((arr_offset + arr_len * sizeof(T)) <= m_data.size()))
+		{
+			throw std::out_of_range("Out of range(ReadArr)");
+		}
+
+		return std::span(reinterpret_cast<const T*>(m_data.data() + arr_offset), arr_len);
+	}
+
 	//index search
 	template <typename T>
 	const T& ReadTable(std::size_t field_index)
@@ -52,6 +70,13 @@ public:
 		return ReadString(field_offset);
 	}
 
+	template<typename T>
+	std::span<const T> ReadTableArr(std::size_t field_index)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, field_index);
+		return ReadArray<T>(field_offset);
+	}
+
 	//field name search
 	template <typename T>
 	const T& ReadTable(std::string_view name)
@@ -64,6 +89,13 @@ public:
 	{
 		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
 		return ReadString(field_offset);
+	}
+
+	template<typename T>
+	std::span<const T> ReadTableArr(std::string_view name)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
+		return ReadArray<T>(field_offset);
 	}
 
 private:
@@ -104,3 +136,11 @@ private:
 		throw std::out_of_range("cannot find this field by name");
 	}
 };
+
+#include "FieldProxy.hpp"
+
+inline FieldProxy View::operator[](std::string_view name)
+{
+	std::size_t offset = GetFieldOffset(m_root_offset, name);
+	return FieldProxy(*this, offset);
+}
