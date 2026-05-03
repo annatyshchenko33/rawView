@@ -3,24 +3,25 @@
 #include <string_view>
 #include "Builder.hpp"
 
+template <typename TBuilder = Builder>
 class TableBuilder
 {
 public:
 	TableBuilder()
 	{
-		m_root_offset = m_builder.Add<uint32_t>(0);
+		m_root_offset = m_builder.template Add<uint32_t>(0);
 	};
 
-	TableBuilder(Builder&& builder) :m_builder(std::move(builder)) 
+	TableBuilder(TBuilder&& builder) :m_builder(std::move(builder)) 
 	{
-		m_root_offset = m_builder.Add<uint32_t>(0);
+		m_root_offset = m_builder.template Add<uint32_t>(0);
 	};
 
 	template <typename T>
 	TableBuilder& Add(std::string_view name, T value)
 	{
 		std::size_t name_offset = m_builder.AddString(name);
-		std::size_t offset = m_builder.Add(value);
+		std::size_t offset = m_builder.template Add<T>(value);
 
 		return FieldConstructor(name_offset, offset);
 	}
@@ -37,7 +38,7 @@ public:
 	TableBuilder& AddArray(std::string_view name, std::span<const T> arr)
 	{
 		std::size_t name_offset = m_builder.AddString(name);
-		std::size_t offset = m_builder.AddArray<T>(arr);
+		std::size_t offset = m_builder.template AddArray<T>(arr);
 
 		return FieldConstructor(name_offset, offset);
 	}
@@ -51,19 +52,19 @@ public:
 
 	Buffer Finish()
 	{
-		std::size_t table_offset = m_builder.Add<uint32_t>(m_fields.size());
-		m_builder.WriteAt<uint32_t>(m_root_offset, table_offset);
+		std::size_t table_offset = m_builder.template Add<uint32_t>(m_fields.size());
+		m_builder.template WriteAt<uint32_t>(m_root_offset, table_offset);
 
-		for (int i = 0; i < m_fields.size(); ++i)
+		for (std::size_t i = 0; i < m_fields.size(); ++i)
 		{
-			m_builder.Add<uint32_t>(m_fields[i].name_offset);
-			m_builder.Add<uint32_t>(m_fields[i].value_offset);
+			m_builder.template Add<uint32_t>(m_fields[i].name_offset);
+			m_builder.template Add<uint32_t>(m_fields[i].value_offset);
 		}
 		return m_builder.Finish();
 	}
 
 private:
-	Builder m_builder;
+	TBuilder m_builder;
 
 	struct FieldInfo
 	{

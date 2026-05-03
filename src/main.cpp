@@ -2,6 +2,9 @@
 #include "Builder.hpp"
 #include "TableBuilder.hpp"
 #include "View.hpp"
+#include "Serializer.hpp"
+#include "Deserializer.hpp"
+#include "Protocol/BinaryProtocol.hpp"
 
 #include <iostream>
 
@@ -62,4 +65,17 @@ int main()
 	{
 		std::cout << p << std::endl;
 	}
+
+	///////////////////////////////////
+
+	Serializer<BinaryProtocol> serialize;
+
+	serialize.Add<int32_t>("age", 3243);
+
+	Buffer buf2 = serialize.Finish();
+
+	Deserializer<BinaryProtocol> deserialize(buf2);
+
+	std::cout << deserialize["age"].as<int32_t>() << std::endl;
+
 }
