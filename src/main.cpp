@@ -5,6 +5,9 @@
 #include "Serializer.hpp"
 #include "Deserializer.hpp"
 #include "Protocol/BinaryProtocol.hpp"
+#include "Protocol/JsonProtocol.hpp"
+
+
 
 #include <iostream>
 
@@ -77,5 +80,22 @@ int main()
 	Deserializer<BinaryProtocol> deserialize(buf2);
 
 	std::cout << deserialize["age"].as<int32_t>() << std::endl;
+
+	//////////////////////JSON//////////////////////
+
+	Serializer<JsonProtocol> serializer;
+
+	serializer.Add<double>("price", 20.34);
+
+	Buffer buf3 = serializer.Finish();
+
+	std::cout << "JSON" << std::endl;
+	std::string json(buf3.get_ptr(), buf3.get_ptr() + buf3.get_size());
+
+	std::cout << json << "\n";
+
+	Deserializer<JsonProtocol> deserializer(buf3);
+
+	std::cout << deserializer["price"].as<double>() << std::endl;
 
 }
