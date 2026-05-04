@@ -119,4 +119,8 @@ int main()
 	std::cout << addr_view.ReadTable<int32_t>("zip") << "\n";
 	std::cout << addr_view.ReadTableString("city") << "\n";
 	std::cout << addr_view.ReadTableString("street") << "\n";
+
+	//borrowed data
+	std::vector<uint8_t> raw = { 1, 2, 3, 4, 5 };
+	Buffer buf = Buffer::borrow(raw.data(), raw.size());
 }

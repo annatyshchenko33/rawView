@@ -72,11 +72,20 @@ public:
 				{
 					return value.size();
 				}
-				else
+				else if constexpr (std::is_same_v<T, ControllPtr>)
 				{
 					return value.c_size;
 				}
+				else
+				{
+					return value.size;
+				}
 			}, m_buffer);
+	}
+
+	static Buffer borrow(const uint8_t* ptr, std::size_t size) noexcept
+	{
+		return Buffer(BorrowedSpan{ ptr, size });
 	}
 
 	const uint8_t* get_ptr() const noexcept
@@ -88,9 +97,13 @@ public:
 				{
 					return value.data();
 				}
-				else
+				else if constexpr (std::is_same_v<T, ControllPtr>)
 				{
 					return value.ptr.get();
+				}
+				else
+				{
+					return value.ptr;
 				}
 			}, m_buffer);
 	}
@@ -125,5 +138,13 @@ private:
 
 	};
 
-	std::variant<StackVector, ControllPtr> m_buffer;
+	struct BorrowedSpan
+	{
+		const uint8_t* ptr;
+		std::size_t size;
+	};
+
+	std::variant<StackVector, ControllPtr, BorrowedSpan> m_buffer;
+
+	Buffer(BorrowedSpan span) noexcept: m_buffer(span) {};
 };
