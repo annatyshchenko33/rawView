@@ -98,7 +98,15 @@ public:
 		return ReadArray<T>(field_offset);
 	}
 
+	View SubView(std::size_t table_offset)
+	{
+		return View(m_data, table_offset);
+	}
+
 private:
+	View(std::span<const uint8_t> data, std::size_t table_offset)
+		: m_data(data), m_root_offset(table_offset) {}
+
 	std::span <const uint8_t> m_data;
 	std::size_t m_root_offset;
 

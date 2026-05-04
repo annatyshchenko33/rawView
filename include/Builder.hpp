@@ -57,6 +57,17 @@ public:
 		memcpy(m_data.data() + offset, &value, sizeof(T));
 	}
 
+	std::size_t Embed(const Builder& other, std::size_t skip_bytes)
+	{
+		auto aligned = (m_data.size() + alignof(uint32_t) - 1) & ~(alignof(uint32_t) - 1);
+		m_data.resize(aligned);
+
+		std::size_t start_offset = m_data.size();
+		auto inner_part = std::span<const uint8_t>(other.m_data).subspan(skip_bytes);
+		m_data.insert(m_data.end(), inner_part.begin(), inner_part.end());
+		return start_offset;
+	}
+
 private:
 	std::vector <uint8_t> m_data;
 

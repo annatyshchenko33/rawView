@@ -50,6 +50,20 @@ public:
 		return AddArray<T>(name, std::span<const T>(arr.begin(), arr.size()));
 	}
 
+	TableBuilder& AddTable(std::string_view name, TableBuilder<TBuilder>&& sub)
+	{
+		std::size_t name_offset = m_builder.AddString(name);
+		std::size_t embed_offset = m_builder.Embed(sub.m_builder, sizeof(uint32_t));
+
+		std::size_t sub_desc_offset = m_builder.template Add<uint32_t>(sub.m_fields.size());
+		for (auto& f : sub.m_fields)
+		{
+			m_builder.template Add<uint32_t>(static_cast<uint32_t>(f.name_offset + embed_offset - sizeof(uint32_t)));
+			m_builder.template Add<uint32_t>(static_cast<uint32_t>(f.value_offset + embed_offset - sizeof(uint32_t)));
+		}
+		return FieldConstructor(name_offset, sub_desc_offset);
+	}
+
 	Buffer Finish()
 	{
 		std::size_t table_offset = m_builder.template Add<uint32_t>(m_fields.size());

@@ -29,6 +29,11 @@ public:
 		return m_view.ReadArray<T>(m_offset);
 	}
 
+	View asTable()
+	{
+		return m_view.SubView(m_offset);
+	}
+
 private:
 	View& m_view;
 	std::size_t m_offset;

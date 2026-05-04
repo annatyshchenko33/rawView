@@ -98,4 +98,25 @@ int main()
 
 	std::cout << deserializer["price"].as<double>() << std::endl;
 
+	////// NESTED TABLES///////////
+
+	Serializer<BinaryProtocol> address;
+	address.Add<int32_t>("zip", 49000).AddString("city", "Dnipro").AddString("street", "Hoholya");
+
+	TableBuilder person;
+	person.AddString("name", "Ivan").Add<int32_t>("age", 25).AddTable("address", std::move(address));
+
+	Buffer buf4 = person.Finish();
+
+	View person_view(buf4);
+
+	std::cout << "\n--- nested tables ---\n";
+	std::cout << person_view.ReadTableString("name") << "\n";
+	std::cout << person_view.ReadTable<int32_t>("age") << "\n";
+
+	View addr_view = person_view["address"].asTable();
+
+	std::cout << addr_view.ReadTable<int32_t>("zip") << "\n";
+	std::cout << addr_view.ReadTableString("city") << "\n";
+	std::cout << addr_view.ReadTableString("street") << "\n";
 }
