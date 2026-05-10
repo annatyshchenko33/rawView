@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "View.hpp"
+#include "Builder.hpp"
 
 class FieldProxy
 {
@@ -25,6 +26,18 @@ public:
 
 	template<typename T>
 	std::span<const T> asArray()
+	{
+		return m_view.ReadArray<T>(m_offset);
+	}
+
+	template<RawStruct T>
+	const T& asStruct()
+	{
+		return m_view.Read<T>(m_offset);
+	}
+
+	template<RawStruct T>
+	std::span<const T> asStructArray()
 	{
 		return m_view.ReadArray<T>(m_offset);
 	}

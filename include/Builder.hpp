@@ -4,8 +4,17 @@
 #include <cstring>
 #include <string_view>
 #include <type_traits>
+#include <concepts>
+#include <span>
 
 #include "Buffer.hpp"
+
+template<typename T>
+concept RawStruct = std::is_trivially_copyable_v<T>
+                 && std::is_standard_layout_v<T>
+                 && !std::is_arithmetic_v<T>
+                 && !std::is_pointer_v<T>
+                 && !std::is_enum_v<T>;
 
 class Builder
 {
@@ -13,7 +22,7 @@ public:
 	template<typename T>
 	std::size_t Add(T value)
 	{
-		static_assert(std::is_trivially_copyable_v<std::decay_t<T>>, "only fundamental types allowed");
+		static_assert(std::is_trivially_copyable_v<std::decay_t<T>>, "T must be trivially copyable");
 		Align(alignof(T));
 		std::size_t offset = Allocate(sizeof(T));
 		memcpy(m_data.data() + offset, &value, sizeof(T));
@@ -44,6 +53,24 @@ public:
 	std::size_t AddArray(std::initializer_list<T> arr)
 	{
 		return AddArray<T>(std::span<const T>(arr.begin(), arr.size()));
+	}
+
+	template<RawStruct T>
+	std::size_t AddStruct(T value)
+	{
+		Align(alignof(T));
+		std::size_t offset = Allocate(sizeof(T));
+		memcpy(m_data.data() + offset, &value, sizeof(T));
+		return offset;
+	}
+
+	template<RawStruct T>
+	std::size_t AddStructArray(std::span<const T> arr)
+	{
+		std::size_t offset = Add<uint32_t>(arr.size());
+		for (const auto& elem : arr)
+			AddStruct<T>(elem);
+		return offset;
 	}
 
 	Buffer Finish()

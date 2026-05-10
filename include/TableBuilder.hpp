@@ -50,6 +50,28 @@ public:
 		return AddArray<T>(name, std::span<const T>(arr.begin(), arr.size()));
 	}
 
+	template <RawStruct T>
+	TableBuilder& AddStruct(std::string_view name, T value)
+	{
+		std::size_t name_offset = m_builder.AddString(name);
+		std::size_t offset = m_builder.template AddStruct<T>(value);
+		return FieldConstructor(name_offset, offset);
+	}
+
+	template <RawStruct T>
+	TableBuilder& AddStructArray(std::string_view name, std::span<const T> arr)
+	{
+		std::size_t name_offset = m_builder.AddString(name);
+		std::size_t offset = m_builder.template AddStructArray<T>(arr);
+		return FieldConstructor(name_offset, offset);
+	}
+
+	template <RawStruct T>
+	TableBuilder& AddStructArray(std::string_view name, std::vector<T> const& arr)
+	{
+		return AddStructArray<T>(name, std::span<const T>(arr));
+	}
+
 	TableBuilder& AddTable(std::string_view name, TableBuilder<TBuilder>&& sub)
 	{
 		std::size_t name_offset = m_builder.AddString(name);

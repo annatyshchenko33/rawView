@@ -122,5 +122,49 @@ int main()
 
 	//borrowed data
 	std::vector<uint8_t> raw = { 1, 2, 3, 4, 5 };
-	Buffer buf = Buffer::borrow(raw.data(), raw.size());
+	Buffer buf5 = Buffer::borrow(raw.data(), raw.size());
+
+	//struct
+
+	struct Point
+	{
+		float x, y, z;
+	};
+
+	struct Color
+	{
+		uint8_t r, g, b;
+	};
+
+	Serializer<BinaryProtocol> scene;
+
+	scene.AddStruct("origin", Point{ .x = 1.0f, .y = 2.5f, .z = 0.0f });
+	scene.AddStruct("bg_color", Color{ .r = 255, .g = 128, .b = 0 });
+
+	std::vector<Point> vertices = {
+		{0.0f,  1.0f, 0.0f},
+		{-1.0f, -1.0f, 0.0f},
+		{1.0f, -1.0f, 0.0f},
+	};
+
+	scene.AddStructArray("vertices", vertices);
+
+	Buffer buf6 = scene.Finish();
+
+	View v(buf6);
+
+	std::cout << "\n--- raw structs ---\n";
+
+	const auto& origin = v["origin"].asStruct<Point>();
+	std::cout << "origin: " << origin.x << " " << origin.y << " " << origin.z << "\n";
+
+	const auto& bg = v["bg_color"].asStruct<Color>();
+	std::cout << "bg_color: " << (int)bg.r << " " << (int)bg.g << " " << (int)bg.b << "\n";
+
+	auto verts = v["vertices"].asStructArray<Point>();
+	std::cout << "vertices (" << verts.size() << "):\n";
+	for (const auto& p : verts)
+	{
+		std::cout << "  " << p.x << " " << p.y << " " << p.z << "\n";
+	}
 }
