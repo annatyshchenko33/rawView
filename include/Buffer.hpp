@@ -134,6 +134,13 @@ public:
 		return std::holds_alternative<StackVector>(m_buffer);
 	}
 
+	Buffer slice(std::size_t offset, std::size_t size) const
+	{
+		if (offset + size > get_size())
+			throw std::out_of_range("slice out of range");
+		return Buffer::borrow(get_ptr() + offset, size);
+	}
+
 	static Buffer from_file(const std::string& path)
 	{
 		std::ifstream file(path, std::ios::binary | std::ios::ate);

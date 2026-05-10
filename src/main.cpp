@@ -217,4 +217,30 @@ int main()
 	View mapped_view(mapped);
 	std::cout << "mmap_file: " << mapped_view.ReadTableString("device") << " = "
 	          << mapped_view.ReadTable<float>("value") << "\n";
+
+	////// ZERO-COPY SLICE///////////
+
+	std::cout << "\n--- zero-copy ---\n";
+
+	Serializer<BinaryProtocol> inner;
+	inner.AddString("city", "Dnipro").Add<int32_t>("zip", 49000);
+
+	TableBuilder packet;
+	packet.AddString("from", "node_A")
+	      .Add<int32_t>("id", 42)
+	      .AddTable("payload", std::move(inner));
+
+	Buffer full_buf = packet.Finish();
+	View full_view(full_buf);
+
+	View payload_view = full_view["payload"].asTable();
+	std::cout << "city: " << payload_view.ReadTableString("city") << "\n";
+	std::cout << "zip:  " << payload_view.ReadTable<int32_t>("zip") << "\n";
+
+	std::span<const uint8_t> all_bytes = full_view.raw_bytes();
+	std::cout << "full buffer via span: " << all_bytes.size() << " bytes\n";
+
+	Buffer head = full_buf.slice(0, 8);
+	std::cout << "slice(0,8): " << head.get_size() << " bytes, ptr same="
+	          << (head.get_ptr() == full_buf.get_ptr() ? "yes" : "no") << "\n";
 }

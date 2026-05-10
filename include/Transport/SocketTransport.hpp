@@ -135,6 +135,11 @@ public:
 		return Buffer(std::move(data));
 	}
 
+	void send_raw(std::span<const uint8_t> bytes)
+	{
+		send_all(bytes.data(), bytes.size());
+	}
+
 private:
 	int m_fd = -1;
 	explicit SocketTransport(int fd) : m_fd(fd) {}

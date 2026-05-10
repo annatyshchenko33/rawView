@@ -104,6 +104,11 @@ public:
 		return View(m_data, table_offset);
 	}
 
+	std::span<const uint8_t> raw_bytes() const noexcept
+	{
+		return m_data;
+	}
+
 	StringArrayView ReadStringArray(std::size_t offset)
 	{
 		uint32_t count = Read<uint32_t>(offset);
