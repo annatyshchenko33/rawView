@@ -140,6 +140,20 @@ public:
 		send_all(bytes.data(), bytes.size());
 	}
 
+	Buffer recv_into(std::vector<uint8_t>& preallocated)
+	{
+		uint32_t size = 0;
+		recv_all(&size, sizeof(size));
+
+		if (size > preallocated.size())
+		{
+			preallocated.resize(size);
+		}
+			
+		recv_all(preallocated.data(), size);
+		return Buffer::borrow(preallocated.data(), size);
+	}
+
 private:
 	int m_fd = -1;
 	explicit SocketTransport(int fd) : m_fd(fd) {}
