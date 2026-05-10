@@ -7,6 +7,7 @@
 
 #include "View.hpp"
 #include "Builder.hpp"
+#include "StringArrayView.hpp"
 
 class FieldProxy
 {
@@ -45,6 +46,11 @@ public:
 	View asTable()
 	{
 		return m_view.SubView(m_offset);
+	}
+
+	StringArrayView asStringArray()
+	{
+		return m_view.ReadStringArray(m_offset);
 	}
 
 private:

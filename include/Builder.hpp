@@ -73,6 +73,30 @@ public:
 		return offset;
 	}
 
+	std::size_t AddStringArray(std::span<const std::string_view> arr)
+	{
+		std::size_t count_offset = Add<uint32_t>((uint32_t)arr.size());
+		std::vector<std::size_t> offset_slots;
+
+		for (std::size_t i = 0; i < arr.size(); ++i)
+		{
+			offset_slots.push_back(Add<uint32_t>(0u));
+		}
+
+		for (std::size_t i = 0; i < arr.size(); ++i)
+		{
+			std::size_t str_offset = AddString(arr[i]);
+			WriteAt<uint32_t>(offset_slots[i], (uint32_t)str_offset);
+		}
+
+		return count_offset;
+	}
+
+	std::size_t AddStringArray(std::initializer_list<std::string_view> arr)
+	{
+		return AddStringArray(std::span<const std::string_view>(arr.begin(), arr.size()));
+	}
+
 	Buffer Finish()
 	{
 		return Buffer(std::move(m_data));

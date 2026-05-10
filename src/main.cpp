@@ -167,4 +167,28 @@ int main()
 	{
 		std::cout << "  " << p.x << " " << p.y << " " << p.z << "\n";
 	}
+
+	// --- string arrays ---
+	TableBuilder movie;
+	movie.AddString("title", "Inception")
+		.AddStringArray("genres", { "sci-fi", "action", "thriller" })
+		.AddStringArray("actors", { "DiCaprio", "Gordon-Levitt", "Page" });
+
+	Buffer movie_buf = movie.Finish();
+	View movie_view(movie_buf);
+
+	std::cout << "\n--- string arrays ---\n";
+	std::cout << movie_view.ReadTableString("title") << "\n";
+
+	auto genres = movie_view["genres"].asStringArray();
+	std::cout << "genres (" << genres.size() << "): ";
+	for (auto g : genres)
+		std::cout << g << " ";
+	std::cout << "\n";
+
+	auto actors = movie_view["actors"].asStringArray();
+	std::cout << "actors (" << actors.size() << "): ";
+	for (auto a : actors)
+		std::cout << a << " ";
+	std::cout << "\n";
 }

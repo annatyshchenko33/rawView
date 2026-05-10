@@ -86,6 +86,18 @@ public:
 		return FieldConstructor(name_offset, sub_desc_offset);
 	}
 
+	TableBuilder& AddStringArray(std::string_view name, std::span<const std::string_view> arr)
+	{
+		std::size_t name_offset = m_builder.AddString(name);
+		std::size_t offset = m_builder.AddStringArray(arr);
+		return FieldConstructor(name_offset, offset);
+	}
+
+	TableBuilder& AddStringArray(std::string_view name, std::initializer_list<std::string_view> arr)
+	{
+		return AddStringArray(name, std::span<const std::string_view>(arr.begin(), arr.size()));
+	}
+
 	Buffer Finish()
 	{
 		std::size_t table_offset = m_builder.template Add<uint32_t>(m_fields.size());

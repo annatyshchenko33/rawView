@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "Buffer.hpp"
+#include <StringArrayView.hpp>
 
 class FieldProxy;
 
@@ -101,6 +102,37 @@ public:
 	View SubView(std::size_t table_offset)
 	{
 		return View(m_data, table_offset);
+	}
+
+	StringArrayView ReadStringArray(std::size_t offset)
+	{
+		uint32_t count = Read<uint32_t>(offset);
+
+		if (count == 0)
+		{
+			return StringArrayView(m_data, {});
+		}
+
+		std::size_t offsets_start = offset + sizeof(uint32_t);
+		if (offsets_start + count * sizeof(uint32_t) > m_data.size())
+		{
+			throw std::out_of_range("Out of range(ReadStringView)");
+		}
+
+		auto offsets = std::span<const uint32_t>(reinterpret_cast<const uint32_t*>(m_data.data() + offsets_start), count);
+		return StringArrayView(m_data, offsets);
+	}
+
+	StringArrayView ReadTableStringArray(std::string_view name)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
+		return ReadStringArray(field_offset);
+	}
+
+	StringArrayView ReadTableStringArray(std::size_t offset)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, offset);
+		return ReadStringArray(field_offset);
 	}
 
 private:
