@@ -191,4 +191,30 @@ int main()
 	for (auto a : actors)
 		std::cout << a << " ";
 	std::cout << "\n";
+
+	////// FILE I/O + MMAP ///////////
+
+	TableBuilder sensor;
+	sensor.AddString("device", "temp_sensor_01")
+	      .Add<float>("value", 36.6f)
+	      .Add<int32_t>("timestamp", 1715000000);
+
+	Buffer sensor_buf = sensor.Finish();
+
+	// save to disk
+	sensor_buf.save_to_file("sensor.rvb");
+	std::cout << "\n--- file i/o ---\n";
+	std::cout << "saved " << sensor_buf.get_size() << " bytes to sensor.rvb\n";
+
+	// simple reading (copy in memory)
+	Buffer loaded = Buffer::from_file("sensor.rvb");
+	View loaded_view(loaded);
+	std::cout << "from_file: " << loaded_view.ReadTableString("device") << " = "
+	          << loaded_view.ReadTable<float>("value") << "\n";
+
+	// mmap — zero-copy, OS loads pages directly from the file
+	Buffer mapped = Buffer::mmap_file("sensor.rvb");
+	View mapped_view(mapped);
+	std::cout << "mmap_file: " << mapped_view.ReadTableString("device") << " = "
+	          << mapped_view.ReadTable<float>("value") << "\n";
 }

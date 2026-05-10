@@ -6,6 +6,17 @@
 #include <variant>
 #include <stdexcept>
 #include <type_traits>
+#include <string>
+#include <fstream>
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <fcntl.h>
+    #include <sys/mman.h>
+    #include <sys/stat.h>
+    #include <unistd.h>
+#endif
 
 class Buffer 
 {
@@ -121,6 +132,102 @@ public:
 	bool is_owned() const noexcept
 	{
 		return std::holds_alternative<StackVector>(m_buffer);
+	}
+
+	static Buffer from_file(const std::string& path)
+	{
+		std::ifstream file(path, std::ios::binary | std::ios::ate);
+		if (!file.is_open())
+		{
+			throw std::runtime_error("cannot open file: " + path);
+		}
+			
+		std::size_t size = static_cast<std::size_t>(file.tellg());
+		file.seekg(0);
+
+		std::vector<uint8_t> data(size);
+		file.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(size));
+		return Buffer(std::move(data));
+	}
+
+	void save_to_file(const std::string& path) const
+	{
+		std::ofstream file(path, std::ios::binary);
+		if (!file.is_open())
+		{
+			throw std::runtime_error("cannot create file: " + path);
+		}
+		file.write(reinterpret_cast<const char*>(get_ptr()), static_cast<std::streamsize>(get_size()));
+	}
+
+	static Buffer mmap_file(const std::string& path)
+	{
+#ifdef _WIN32
+		HANDLE file = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ,
+		                          nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (file == INVALID_HANDLE_VALUE)
+		{
+			throw std::runtime_error("cannot open file: " + path);
+		}
+			
+		LARGE_INTEGER file_size{};
+		GetFileSizeEx(file, &file_size);
+		std::size_t size = static_cast<std::size_t>(file_size.QuadPart);
+
+		if (size == 0) 
+		{ 
+			CloseHandle(file); return Buffer{}; 
+		}
+
+		HANDLE mapping = CreateFileMapping(file, nullptr, PAGE_READONLY, 0, 0, nullptr);
+		if (!mapping)
+		{
+			CloseHandle(file);
+			throw std::runtime_error("CreateFileMapping failed: " + path);
+		}
+
+		void* ptr = MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+		if (!ptr)
+		{
+			CloseHandle(mapping);
+			CloseHandle(file);
+			throw std::runtime_error("MapViewOfFile failed: " + path);
+		}
+
+		return Buffer(static_cast<uint8_t*>(ptr), size,
+			[file, mapping](uint8_t* p)
+			{
+				UnmapViewOfFile(p);
+				CloseHandle(mapping);
+				CloseHandle(file);
+			});
+#else
+		int fd = open(path.c_str(), O_RDONLY);
+		if (fd < 0)
+		{
+			throw std::runtime_error("cannot open file: " + path);
+		}
+			
+		struct stat st{};
+		fstat(fd, &st);
+		std::size_t size = static_cast<std::size_t>(st.st_size);
+
+		if (size == 0)
+		{ 
+			close(fd); return Buffer{}; 
+		}
+
+		void* ptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+		close(fd);
+
+		if (ptr == MAP_FAILED)
+		{
+			throw std::runtime_error("mmap failed: " + path);
+		}
+			
+		return Buffer(static_cast<uint8_t*>(ptr), size,
+			[size](uint8_t* p) { munmap(p, size); });
+#endif
 	}
 
 private:

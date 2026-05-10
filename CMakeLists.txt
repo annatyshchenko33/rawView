@@ -31,3 +31,16 @@ target_link_libraries(UTests PRIVATE GTest::gtest_main yyjson)
 
 include(GoogleTest)
 gtest_discover_tests(UTests)
+
+add_executable(server src/server.cpp)
+target_include_directories(server PRIVATE include)
+target_link_libraries(server PRIVATE yyjson)
+
+add_executable(client src/client.cpp)
+target_include_directories(client PRIVATE include)
+target_link_libraries(client PRIVATE yyjson)
+
+if(WIN32)
+    target_link_libraries(server PRIVATE ws2_32)
+    target_link_libraries(client PRIVATE ws2_32)
+endif()
