@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Builder.hpp"
+#include "TableBuilder.hpp"
 #include "View.hpp"
 
 TEST(ViewTest, ReadInt)
@@ -53,4 +54,64 @@ TEST(ViewTest, OutOfRangeThrows)
 
     View view(buf);
     EXPECT_THROW(view.Read<int32_t>(9999), std::out_of_range);
+}
+
+TEST(ViewTest, HasExistingField)
+{
+    TableBuilder  tb;
+    tb.Add<int32_t>("age", 45);
+    Buffer buf = tb.Finish();
+
+    View viewer(buf);
+    EXPECT_TRUE(viewer.has("age"));
+}
+
+TEST(ViewTest, HasMissingField)
+{
+    TableBuilder  tb;
+    tb.Add<int32_t>("age", 45);
+    Buffer buf = tb.Finish();
+
+    View viewer(buf);
+    EXPECT_FALSE(viewer.has("zxc"));
+}
+
+TEST(ViewTest, HasEmptyTable)
+{
+    TableBuilder  tb;
+    Buffer buf = tb.Finish();
+
+    View viewer(buf);
+    EXPECT_FALSE(viewer.has("zxc"));
+}
+
+TEST(ViewTest, KeysOrder)
+{
+    TableBuilder  tb;
+    tb.Add<int32_t>("age", 45).AddString("name", "Sasha").AddStringArray("friends", { "Anya", "Vlad", "Olya" });
+    Buffer buf = tb.Finish();
+
+    View viewer(buf);
+    std::vector<std::string_view> exp_res = { "age", "name", "friends" };
+    EXPECT_EQ(viewer.keys(), exp_res);
+}
+
+TEST(ViewTest, KeysEmpty)
+{
+    TableBuilder  tb;
+    Buffer buf = tb.Finish();
+
+    View viewer(buf);
+    std::vector<std::string_view> exp_res = {};
+    EXPECT_EQ(viewer.keys(), exp_res);
+}
+
+TEST(ViewTest, FieldCount)
+{
+    TableBuilder  tb;
+    tb.Add<int32_t>("age", 45).AddString("name", "Sasha").AddStringArray("friends", { "Anya", "Vlad", "Olya" });
+    Buffer buf = tb.Finish();
+
+    View viewer(buf);
+    EXPECT_EQ(viewer.field_count(), 3);
 }

@@ -3,6 +3,7 @@
 #include <span>
 #include <string_view>
 #include <stdexcept>
+#include <vector>
 
 #include "Buffer.hpp"
 #include <StringArrayView.hpp>
@@ -138,6 +139,44 @@ public:
 	{
 		std::size_t field_offset = GetFieldOffset(m_root_offset, offset);
 		return ReadStringArray(field_offset);
+	}
+
+	uint32_t field_count()
+	{
+		return Read<uint32_t>(m_root_offset);
+	}
+
+	bool has(std::string_view name)
+	{
+		uint32_t field_count = Read<uint32_t>(m_root_offset);
+		std::size_t first_pair = m_root_offset + sizeof(uint32_t);
+
+		for (std::size_t i = 0; i < field_count; ++i)
+		{
+			uint32_t name_offset = Read<uint32_t>(first_pair);
+			if (ReadString(name_offset) == name)
+			{
+				return true;
+			}
+			first_pair += 8;
+		}
+		return false;
+	}
+
+	std::vector<std::string_view> keys()
+	{
+		uint32_t field_count = Read<uint32_t>(m_root_offset);
+		std::vector<std::string_view> result;
+		result.reserve(field_count);
+		std::size_t first_pair = m_root_offset + sizeof(uint32_t);
+
+		for (std::size_t i = 0; i < field_count; ++i)
+		{
+			uint32_t name_offset = Read<uint32_t>(first_pair);
+			result.push_back(ReadString(name_offset));
+			first_pair += 8;
+		}
+		return result;
 	}
 
 private:
