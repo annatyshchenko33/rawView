@@ -108,6 +108,14 @@ public:
 		memcpy(m_data.data() + offset, &value, sizeof(T));
 	}
 
+	template<typename T>
+	T ReadAt(std::size_t offset) const
+	{
+		T value;
+		memcpy(&value, m_data.data() + offset, sizeof(T));
+		return value;
+	}
+
 	std::size_t Embed(const Builder& other, std::size_t skip_bytes)
 	{
 		auto aligned = (m_data.size() + alignof(uint32_t) - 1) & ~(alignof(uint32_t) - 1);

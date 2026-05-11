@@ -77,11 +77,23 @@ public:
 		std::size_t name_offset = m_builder.AddString(name);
 		std::size_t embed_offset = m_builder.Embed(sub.m_builder, sizeof(uint32_t));
 
-		std::size_t sub_desc_offset = m_builder.template Add<uint32_t>(sub.m_fields.size());
+		const std::size_t adjustment = embed_offset - sizeof(uint32_t);
+
+		for (std::size_t sub_pos : sub.m_desc_patches)
+		{
+			std::size_t our_pos = embed_offset + sub_pos - sizeof(uint32_t);
+			uint32_t val = m_builder.template ReadAt<uint32_t>(our_pos);
+			m_builder.template WriteAt<uint32_t>(our_pos, val + static_cast<uint32_t>(adjustment));
+			m_desc_patches.push_back(our_pos);
+		}
+
+		std::size_t sub_desc_offset = m_builder.template Add<uint32_t>((uint32_t)sub.m_fields.size());
 		for (auto& f : sub.m_fields)
 		{
-			m_builder.template Add<uint32_t>(static_cast<uint32_t>(f.name_offset + embed_offset - sizeof(uint32_t)));
-			m_builder.template Add<uint32_t>(static_cast<uint32_t>(f.value_offset + embed_offset - sizeof(uint32_t)));
+			std::size_t npos = m_builder.template Add<uint32_t>(static_cast<uint32_t>(f.name_offset + adjustment));
+			std::size_t vpos = m_builder.template Add<uint32_t>(static_cast<uint32_t>(f.value_offset + adjustment));
+			m_desc_patches.push_back(npos);
+			m_desc_patches.push_back(vpos);
 		}
 		return FieldConstructor(name_offset, sub_desc_offset);
 	}
@@ -121,6 +133,7 @@ private:
 	};
 
 	std::vector<FieldInfo> m_fields;
+	std::vector<std::size_t> m_desc_patches;
 	std::size_t m_root_offset;
 
 	TableBuilder& FieldConstructor(std::size_t name_offset, std::size_t offset)
