@@ -2,6 +2,7 @@
 #include "Builder.hpp"
 #include "TableBuilder.hpp"
 #include "View.hpp"
+#include "MutableView.hpp"
 #include "Serializer.hpp"
 #include "Deserializer.hpp"
 #include "Protocol/BinaryProtocol.hpp"
@@ -243,4 +244,37 @@ int main()
 	Buffer head = full_buf.slice(0, 8);
 	std::cout << "slice(0,8): " << head.get_size() << " bytes, ptr same="
 	          << (head.get_ptr() == full_buf.get_ptr() ? "yes" : "no") << "\n";
+
+	////// MUTABLE VIEW ///////////
+
+	TableBuilder reading;
+	reading.AddString("device", "temp_sensor_01")
+	       .Add<float>("value", 36.6f)
+	       .Add<int32_t>("status", 0);
+
+	Buffer reading_buf = reading.Finish();
+
+	std::cout << "\n--- MutableView ---\n";
+	std::cout << "before:  value=" << View(reading_buf).ReadTable<float>("value")
+	          << "  status=" << View(reading_buf).ReadTable<int32_t>("status") << "\n";
+
+	MutableView mv(reading_buf);
+
+	mv.Set<float>("value", 37.2f);
+	mv.Set<int32_t>("status", 1);
+
+	std::cout << "after:   value=" << mv.Get<float>("value")
+	          << "  status=" << mv.Get<int32_t>("status") << "\n";
+	std::cout << "device:  " << mv.GetString("device") << "\n";
+	std::cout << "has 'value':  " << std::boolalpha << mv.has("value") << "\n";
+	std::cout << "has 'weight': " << mv.has("weight") << "\n";
+
+	std::cout << "keys: ";
+	for (auto k : mv.keys())
+		std::cout << k << " ";
+	std::cout << "\n";
+
+	// original buffer also changed — no copy was made
+	std::cout << "View(buf) sees new value: "
+	          << View(reading_buf).ReadTable<float>("value") << "\n";
 }

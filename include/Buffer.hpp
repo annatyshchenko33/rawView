@@ -141,6 +141,27 @@ public:
 		return Buffer::borrow(get_ptr() + offset, size);
 	}
 
+	std::span<uint8_t> mutable_bytes()
+	{
+		return std::visit([](auto&& value) ->std::span<uint8_t>
+			{
+				using T = std::decay_t<decltype(value) >;
+
+				if constexpr (std::is_same_v<T, StackVector>)
+				{
+					return std::span<uint8_t>(value.data(), value.size());
+				}
+				else if constexpr (std::is_same_v<T, ControllPtr>)
+				{
+					return std::span<uint8_t>(value.ptr.get(), value.c_size);
+				}
+				else
+				{
+					throw std::runtime_error("cannot mutate a borrowed buffer");
+				}
+			},m_buffer);
+	}
+
 	static Buffer from_file(const std::string& path)
 	{
 		std::ifstream file(path, std::ios::binary | std::ios::ate);
