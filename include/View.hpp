@@ -51,6 +51,7 @@ public:
 	}
 
 	template<typename T>
+		requires SupportedScalar<T>
 	std::span<const T> ReadArray(std::size_t offset)
 	{
 		uint32_t arr_len = Read<uint32_t>(offset);
@@ -66,6 +67,7 @@ public:
 
 	//index search
 	template <typename T>
+		requires SupportedScalar<T>
 	const T& ReadTable(std::size_t field_index)
 	{
 		std::size_t field_offset = GetFieldOffset(m_root_offset, field_index);
@@ -79,6 +81,7 @@ public:
 	}
 
 	template<typename T>
+		requires SupportedScalar<T>
 	std::span<const T> ReadTableArr(std::size_t field_index)
 	{
 		std::size_t field_offset = GetFieldOffset(m_root_offset, field_index);
@@ -87,6 +90,7 @@ public:
 
 	//field name search
 	template <typename T>
+		requires SupportedScalar<T>
 	const T& ReadTable(std::string_view name)
 	{
 		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
@@ -100,6 +104,7 @@ public:
 	}
 
 	template<typename T>
+		requires SupportedScalar<T>
 	std::span<const T> ReadTableArr(std::string_view name)
 	{
 		std::size_t field_offset = GetFieldOffset(m_root_offset, name);

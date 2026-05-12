@@ -258,6 +258,12 @@ public:
 #endif
 	}
 
+	Buffer clone() const
+	{
+		std::vector<uint8_t> copy(get_ptr(), get_ptr() + get_size());
+		return Buffer(std::move(copy));
+	}
+
 private:
 	using StackVector = std::vector<uint8_t>;
 

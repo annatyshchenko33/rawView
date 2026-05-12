@@ -16,6 +16,9 @@ concept RawStruct = std::is_trivially_copyable_v<T>
                  && !std::is_pointer_v<T>
                  && !std::is_enum_v<T>;
 
+template<typename T>
+concept SupportedScalar = std::is_arithmetic_v<T>;
+
 class Builder
 {
 public:

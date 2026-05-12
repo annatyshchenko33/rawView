@@ -25,6 +25,7 @@ public:
 	}
 
 	template<typename T>
+		requires SupportedScalar<T>
 	void Set(std::string_view name, T value)
 	{
 		static_assert(std::is_trivially_copyable_v<std::decay_t<T>>, "T must be trivially copyable");
@@ -33,6 +34,7 @@ public:
 	}
 
 	template<typename T>
+		requires SupportedScalar<T>
 	void Set(std::size_t index, T value)
 	{
 		static_assert(std::is_trivially_copyable_v<std::decay_t<T>>, "T must be trivially copyable");
@@ -65,6 +67,7 @@ public:
 	}
 
 	template<typename T>
+		requires SupportedScalar<T>
 	T Get(std::string_view name)
 	{
 		static_assert(std::is_trivially_copyable_v<std::decay_t<T>>, "T must be trivially copyable");
@@ -73,6 +76,7 @@ public:
 	}
 
 	template<typename T>
+		requires SupportedScalar<T>
 	T Get(std::size_t index)
 	{
 		static_assert(std::is_trivially_copyable_v<std::decay_t<T>>, "T must be trivially copyable");
