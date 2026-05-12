@@ -177,3 +177,98 @@ TEST(MutableView, BorrowedBufferThrows)
 
 	EXPECT_THROW(MutableView mv(buf), std::runtime_error);
 }
+
+TEST(MutableView, GetSubMutableByName)
+{
+	TableBuilder tb;
+	tb.Add<int32_t>("a", 0).Add<int32_t>("b", 0).Add<int32_t>("c", 0);
+
+	TableBuilder tb2;
+	tb2.Add<int32_t>("d", 1).AddTable("first", std::move(tb));
+
+	Buffer buf = tb2.Finish();
+
+	MutableView mv(buf);
+	MutableView mv_first = mv.GetSubMutable("first");
+	mv_first.Set<int32_t>("a", 1);
+
+	View v(buf);
+	View sub_view = v["first"].asTable();
+	EXPECT_EQ(sub_view.ReadTable<int32_t>("a"), 1);
+}
+
+TEST(MutableView, GetSubMutableByIndex)
+{
+	TableBuilder tb;
+	tb.Add<int32_t>("a", 0).Add<int32_t>("b", 0).Add<int32_t>("c", 0);
+
+	TableBuilder tb2;
+	tb2.Add<int32_t>("d", 1).AddTable("first", std::move(tb));
+
+	Buffer buf = tb2.Finish();
+
+	MutableView mv(buf);
+	MutableView mv_first = mv.GetSubMutable(1);
+	mv_first.Set<int32_t>("a", 1);
+
+	View v(buf);
+	View sub_view = v["first"].asTable();
+	EXPECT_EQ(sub_view.ReadTable<int32_t>("a"), 1);
+}
+
+TEST(MutableView, GetSubMutableMissingThrows)
+{
+	TableBuilder tb;
+	tb.Add<int32_t>("a", 0).Add<int32_t>("b", 0).Add<int32_t>("c", 0);
+
+	TableBuilder tb2;
+	tb2.Add<int32_t>("d", 1).AddTable("first", std::move(tb));
+
+	Buffer buf = tb2.Finish();
+
+	MutableView mv(buf);
+	EXPECT_THROW(mv.GetSubMutable("nope"), std::runtime_error);
+}
+
+TEST(MutableView, SubMutableDoesNotAffectOtherFields)
+{
+	TableBuilder tb;
+	tb.Add<int32_t>("a", 0).Add<int32_t>("b", 0).Add<int32_t>("c", 0);
+
+	TableBuilder tb2;
+	tb2.Add<int32_t>("d", 1).AddTable("first", std::move(tb));
+
+	Buffer buf = tb2.Finish();
+
+	MutableView mv(buf);
+	MutableView mv_first = mv.GetSubMutable(1);
+	mv_first.Set<int32_t>("a", 1);
+
+	View v(buf);
+	View sub_view = v["first"].asTable();
+	EXPECT_EQ(v.ReadTable<int32_t>("d"), 1);
+}
+
+TEST(MutableView, DoubleNested)
+{
+	TableBuilder tb;
+	tb.Add<int32_t>("a", 0).Add<int32_t>("b", 0).Add<int32_t>("c", 0);
+
+	TableBuilder tb2;
+	tb2.Add<int32_t>("d", 1).AddTable("first", std::move(tb));
+
+	TableBuilder tb3;
+	tb3.Add<int32_t>("e", 1).AddTable("second", std::move(tb2));
+
+	Buffer buf = tb3.Finish();
+
+	MutableView mv(buf);
+	MutableView mv_second = mv.GetSubMutable("second");
+	MutableView mv_first = mv_second.GetSubMutable("first");
+	mv_second.Set<int32_t>("d", 2);
+	mv_first.Set<int32_t>("c", 2);
+
+	View v(buf);
+	EXPECT_EQ(v["second"].asTable().ReadTable<int32_t>("d"), 2);
+	EXPECT_EQ(v["second"].asTable()["first"].asTable().ReadTable<int32_t>("c"), 2);
+}

@@ -343,4 +343,21 @@ int main()
 			std::cout << key << "\n";
 		}
 	}
+
+	//mutable sub-view
+	TableBuilder city2;
+	city2.Add<int32_t>("zip", 49000).AddString("name", "Dnipro");
+
+	TableBuilder person12;
+	person12.AddString("name", "Olena").AddTable("city", std::move(city2));
+
+	Buffer buf_sub_mv = person12.Finish();
+	MutableView mv3(buf_sub_mv);
+
+	MutableView city_mv = mv3.GetSubMutable("city");
+	city_mv.Set<int32_t>("zip", 50000);
+
+	View v_sub_mv(buf_sub_mv);
+	View city_v = v_sub_mv["city"].asTable();
+	std::cout << city_v.ReadTable<int32_t>("zip") << std::endl;
 }

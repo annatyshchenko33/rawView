@@ -131,7 +131,25 @@ public:
 		return View(tmp);
 	}
 
+	MutableView GetSubMutable(std::string_view name)
+	{
+		std::size_t offset = GetFieldOffset(name);
+		return  MutableView(m_data, offset);
+	}
+
+	MutableView GetSubMutable(std::size_t index)
+	{
+		std::size_t offset = GetFieldOffset(index);
+		return  MutableView(m_data, offset);
+	}
+
 private:
+	MutableView(std::span<uint8_t> data, std::size_t root_offset)
+	{
+		m_data = data;
+		m_root_offset = root_offset;
+	}
+
 	std::span<uint8_t> m_data;
 	std::size_t m_root_offset;
 
