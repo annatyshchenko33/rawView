@@ -8,8 +8,6 @@
 #include "Protocol/BinaryProtocol.hpp"
 #include "Protocol/JsonProtocol.hpp"
 
-
-
 #include <iostream>
 
 int main()

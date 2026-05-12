@@ -98,6 +98,12 @@ public:
 		return FieldConstructor(name_offset, sub_desc_offset);
 	}
 
+	TableBuilder& AddTable(std::string_view name, const TableBuilder<TBuilder>& sub)
+	{
+		TableBuilder<TBuilder> copy = sub;
+		return AddTable(name, std::move(copy));
+	}
+
 	TableBuilder& AddStringArray(std::string_view name, std::span<const std::string_view> arr)
 	{
 		std::size_t name_offset = m_builder.AddString(name);
