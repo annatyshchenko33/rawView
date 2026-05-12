@@ -4,6 +4,7 @@
 #include <string_view>
 #include <stdexcept>
 #include <vector>
+#include <utility>
 
 #include "Buffer.hpp"
 #include <StringArrayView.hpp>
@@ -17,6 +18,11 @@ public:
 	{
 		m_root_offset = Read<uint32_t>(0);
 	};
+
+	friend struct FieldIterator;
+
+	FieldIterator begin();
+	FieldIterator end();
 
 	FieldProxy operator[](std::string_view name);
 
@@ -227,4 +233,39 @@ inline FieldProxy View::operator[](std::string_view name)
 {
 	std::size_t offset = GetFieldOffset(m_root_offset, name);
 	return FieldProxy(*this, offset);
+}
+
+struct FieldIterator
+{
+	View* m_view;
+	std::size_t m_index;
+
+	bool operator != (const FieldIterator& other) const
+	{
+		return m_index != other.m_index;
+	}
+
+	FieldIterator& operator++()
+	{
+		++m_index;
+		return *this;
+	}
+
+	std::pair<std::string_view, FieldProxy> operator*()
+	{
+		std::size_t pos = m_view->m_root_offset + sizeof(uint32_t) + m_index * (sizeof(uint32_t) * 2);
+		uint32_t name_offset = m_view->Read<uint32_t>(pos);
+		uint32_t value_offset = m_view->Read<uint32_t>(pos + sizeof(uint32_t));
+		return { m_view->ReadString(name_offset), FieldProxy(*m_view, value_offset) };
+	}
+};
+
+inline FieldIterator View::begin()
+{
+	return FieldIterator{ this, 0 };
+}
+
+inline FieldIterator View::end()
+{
+	return FieldIterator{ this, field_count() };
 }

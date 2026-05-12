@@ -277,4 +277,70 @@ int main()
 	// original buffer also changed — no copy was made
 	std::cout << "View(buf) sees new value: "
 	          << View(reading_buf).ReadTable<float>("value") << "\n";
+
+	// iterator: simple fields
+	TableBuilder movie2;
+	movie2.AddString("title", "Inception")
+		.AddString("title2", "Scream")
+		.AddString("title3", "Euphoria");
+
+	Buffer m_buf = movie2.Finish();
+	View v_mov(m_buf);
+
+	std::cout << "\n--- iterator: simple fields ---\n";
+	for (auto [key, proxy] : v_mov)
+		std::cout << key << " = " << proxy.asString() << "\n";
+
+	// iterator: nested table 
+	TableBuilder city;
+	city.Add<int32_t>("zip", 49000).AddString("name", "Dnipro");
+
+	TableBuilder person2;
+	person2.AddString("name", "Olena")
+	       .Add<int32_t>("age", 28)
+	       .AddTable("city", std::move(city));
+
+	Buffer person2_buf = person2.Finish();
+	View person2_view(person2_buf);
+
+	std::cout << "\n--- iterator: nested table ---\n";
+	for (auto [key, proxy] : person2_view)
+	{
+		if (key == "city")
+		{
+			std::cout << key << ":\n";
+			View sub = proxy.asTable();
+			for (auto [sub_key, sub_proxy] : sub)
+				std::cout << "  " << sub_key << " = " << sub_proxy.as<int32_t>() << "\n";
+		}
+		else
+		{
+			std::cout << key << "\n";
+		}
+	}
+
+	// iterator: string array
+	TableBuilder catalog;
+	catalog.AddString("title", "Dune")
+	       .AddStringArray("tags", { "sci-fi", "epic", "drama" })
+	       .Add<int32_t>("year", 2021);
+
+	Buffer catalog_buf = catalog.Finish();
+	View catalog_view(catalog_buf);
+
+	std::cout << "\n--- iterator: string array ---\n";
+	for (auto [key, proxy] : catalog_view)
+	{
+		if (key == "tags")
+		{
+			std::cout << key << ": ";
+			for (auto tag : proxy.asStringArray())
+				std::cout << tag << " ";
+			std::cout << "\n";
+		}
+		else
+		{
+			std::cout << key << "\n";
+		}
+	}
 }
