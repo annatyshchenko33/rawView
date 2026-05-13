@@ -230,6 +230,29 @@ public:
 		return result;
 	}
 
+	uint32_t GetValueOffset(std::string_view name)
+	{
+		return static_cast<uint32_t>(GetFieldOffset(m_root_offset, name));
+	}
+
+	std::vector<std::pair<std::string_view, uint32_t>> field_entries()
+	{
+		uint32_t count = Read<uint32_t>(m_root_offset);
+		std::vector<std::pair<std::string_view, uint32_t>> result;
+		result.reserve(count);
+		std::size_t first_pair = m_root_offset + sizeof(uint32_t);
+
+		for (std::size_t i = 0; i < count; ++i)
+		{
+			uint32_t name_offset = Read<uint32_t>(first_pair);
+			uint32_t value_offset = Read<uint32_t>(first_pair + sizeof(uint32_t));
+
+			result.push_back({ ReadString(name_offset), value_offset });
+			first_pair += 8;
+		}
+		return result;
+	}
+
 private:
 	View(std::span<const uint8_t> data, std::size_t table_offset)
 		: m_data(data), m_root_offset(table_offset) {}

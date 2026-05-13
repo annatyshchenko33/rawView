@@ -8,6 +8,7 @@
 
 #include <rfl.hpp>
 #include <rfl/json.hpp>
+#include "HashedView.hpp"
 
 #include <yyjson.h>
 #include "Verifier.hpp"
@@ -535,3 +536,40 @@ static void BM_Throughput_Json(benchmark::State& state)
     state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(buf_size));
 }
 BENCHMARK(BM_Throughput_Json);
+
+static void BM_HashedFieldAccess(benchmark::State& state)
+{
+    TableBuilder tb;
+    tb.Add<int32_t>("age", 25)
+        .AddString("name", "Alexandra")
+        .Add<double>("score", 98.5);
+    Buffer buf = tb.Finish();
+    HashedView hv(buf);
+
+    for (auto _ : state)
+    {
+        auto val = hv.ReadTable<int32_t>("age");
+        benchmark::DoNotOptimize(val);
+    }
+}
+BENCHMARK(BM_HashedFieldAccess);
+
+static void BM_HashedFieldScaling(benchmark::State& state)
+{
+    int n = static_cast<int>(state.range(0));
+
+    TableBuilder tb;
+    for (int i = 0; i < n; ++i)
+        tb.Add<int32_t>("field" + std::to_string(i), i);
+    Buffer buf = tb.Finish();
+    HashedView hv(buf);
+
+    std::string last = "field" + std::to_string(n - 1);
+
+    for (auto _ : state)
+    {
+        auto val = hv.ReadTable<int32_t>(last);
+        benchmark::DoNotOptimize(val);
+    }
+}
+BENCHMARK(BM_HashedFieldScaling)->Arg(5)->Arg(10)->Arg(20)->Arg(50);
