@@ -152,6 +152,46 @@ public:
 		return ReadStringArray(field_offset);
 	}
 
+	template<RawStruct T>
+	std::span<const T> ReadStructArray(std::size_t offset)
+	{
+		uint32_t count = Read<uint32_t>(offset);
+		std::size_t start = (offset + sizeof(uint32_t) + alignof(T) - 1) & ~(alignof(T) - 1);
+
+		if (!((start + count * sizeof(T)) <= m_data.size()))
+			throw std::out_of_range("Out of range(ReadStructArray)");
+
+		return std::span<const T>(reinterpret_cast<const T*>(m_data.data() + start), count);
+	}
+
+	template<RawStruct T>
+	const T& ReadTableStruct(std::string_view name)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
+		return Read<T>(field_offset);
+	}
+
+	template<RawStruct T>
+	const T& ReadTableStruct(std::size_t field_index)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, field_index);
+		return Read<T>(field_offset);
+	}
+
+	template<RawStruct T>
+	std::span<const T> ReadTableStructArray(std::string_view name)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, name);
+		return ReadStructArray<T>(field_offset);
+	}
+
+	template<RawStruct T>
+	std::span<const T> ReadTableStructArray(std::size_t field_index)
+	{
+		std::size_t field_offset = GetFieldOffset(m_root_offset, field_index);
+		return ReadStructArray<T>(field_offset);
+	}
+
 	uint32_t field_count()
 	{
 		return Read<uint32_t>(m_root_offset);

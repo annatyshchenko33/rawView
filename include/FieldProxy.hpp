@@ -40,7 +40,7 @@ public:
 	template<RawStruct T>
 	std::span<const T> asStructArray()
 	{
-		return m_view.ReadArray<T>(m_offset);
+		return m_view.ReadStructArray<T>(m_offset);
 	}
 
 	View asTable()
