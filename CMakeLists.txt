@@ -32,6 +32,11 @@ target_link_libraries(UTests PRIVATE GTest::gtest_main yyjson)
 include(GoogleTest)
 gtest_discover_tests(UTests)
 
+option(BUILD_BENCHMARKS "Build benchmarks" OFF)
+if(BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
+
 add_executable(server src/server.cpp)
 target_include_directories(server PRIVATE include)
 target_link_libraries(server PRIVATE yyjson)
