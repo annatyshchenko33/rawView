@@ -10,6 +10,15 @@
 
 #include <iostream>
 
+template<typename Protocol>
+Buffer serialize_record(std::string_view name, int32_t value)
+{
+	Serializer<Protocol> writer;
+	writer.AddString("name", name);
+	writer.Add<int32_t>("value", value);
+	return writer.Finish();
+}
+
 int main()
 {
 	//option
@@ -358,4 +367,10 @@ int main()
 	View v_sub_mv(buf_sub_mv);
 	View city_v = v_sub_mv["city"].asTable();
 	std::cout << city_v.ReadTable<int32_t>("zip") << std::endl;
+
+	////
+	 // виклик для бінарного формату:
+	Buffer bin = serialize_record<BinaryProtocol>("sensor_1", 42);
+	// виклик для JSON:
+	Buffer json_buf = serialize_record<JsonProtocol>("sensor_1", 42);
 }

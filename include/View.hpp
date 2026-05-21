@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "Buffer.hpp"
+#include "Builder.hpp"
 #include <StringArrayView.hpp>
 
 class FieldProxy;
